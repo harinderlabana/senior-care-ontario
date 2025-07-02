@@ -22,7 +22,7 @@ const App = () => {
   const [favorites, setFavorites] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [costError, setCostError] = useState("");
-  const [listPage, setListPage] = useState(1); // New state for pagination
+  const [listPage, setListPage] = useState(1);
 
   useEffect(() => {
     if (GA_MEASUREMENT_ID && GA_MEASUREMENT_ID !== "G-XXXXXXXXXX") {
@@ -45,7 +45,7 @@ const App = () => {
   };
 
   const handleFilterChange = (e) => {
-    setListPage(1); // Reset to first page on any filter change
+    setListPage(1);
     const { name, value } = e.target;
     const newFilters = { ...filters, [name]: value };
     setFilters(newFilters);
@@ -65,7 +65,7 @@ const App = () => {
   };
 
   const handleSearch = (e) => {
-    setListPage(1); // Reset to first page on search
+    setListPage(1);
     setSearchTerm(e.target.value);
     ReactGA.event({
       category: "Search",
@@ -77,16 +77,17 @@ const App = () => {
   const handleResetFilters = () => {
     setFilters({ city: "all", type: "all", minCost: "", maxCost: "" });
     setSearchTerm("");
-    setShowFavorites(false);
+    // FIX: Do NOT change showFavorites state on reset
+    // setShowFavorites(false);
     setCostError("");
-    setListPage(1); // Reset page on filter reset
+    setListPage(1);
     ReactGA.event({ category: "Filter", action: "reset_filters" });
   };
 
   const handleShowFavoritesClick = () => {
     const newShowFavorites = !showFavorites;
     setShowFavorites(newShowFavorites);
-    setListPage(1); // Reset page when toggling favorites
+    setListPage(1);
 
     if (newShowFavorites) {
       setFilters({ city: "all", type: "all", minCost: "", maxCost: "" });
@@ -145,6 +146,7 @@ const App = () => {
   const handleBackToList = () => {
     setSelectedHomeId(null);
     setCurrentPage("list");
+    setShowFavorites(false);
   };
 
   const handlePageChange = (pageNumber) => {
@@ -154,7 +156,6 @@ const App = () => {
 
   const selectedHome = homesData.find((home) => home.id === selectedHomeId);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredHomes.length / ITEMS_PER_PAGE);
   const paginatedHomes = filteredHomes.slice(
     (listPage - 1) * ITEMS_PER_PAGE,
@@ -189,8 +190,8 @@ const App = () => {
       {currentPage === "list" && (
         <HomePage
           allHomes={homesData}
-          filteredHomes={paginatedHomes} // Pass the paginated list
-          totalFilteredHomes={filteredHomes.length} // Pass the total count for the header
+          filteredHomes={paginatedHomes}
+          totalFilteredHomes={filteredHomes.length}
           filters={filters}
           searchTerm={searchTerm}
           onFilterChange={handleFilterChange}
