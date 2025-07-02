@@ -9,8 +9,8 @@ const Header = ({
 }) => (
   <header className="bg-white/95 shadow-sm sticky top-0 z-20 backdrop-blur-lg border-b border-gray-200">
     <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-      <a
-        href="#"
+      {/* FIX: Changed the <a> tag to a <button> for accessibility */}
+      <button
         onClick={(e) => {
           e.preventDefault();
           onBackToList();
@@ -24,7 +24,7 @@ const Header = ({
         <h1 className="font-heading text-2xl md:text-3xl font-black text-[#0c2d48]">
           SeniorCare Ontario
         </h1>
-      </a>
+      </button>
       <button
         onClick={onShowFavorites}
         className="relative px-4 py-2 rounded-lg font-semibold transition-colors"

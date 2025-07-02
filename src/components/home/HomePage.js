@@ -2,7 +2,8 @@ import React, { useMemo } from "react";
 import HomeCard from "./HomeCard";
 import { SearchIcon } from "../common/Icons";
 import Meta from "../common/Meta";
-import Pagination from "../common/Pagination"; // Import the new component
+import Pagination from "../common/Pagination";
+import AdSense from "../common/AdSense"; // Import the AdSense component
 
 const HomePage = ({
   allHomes,
@@ -31,6 +32,19 @@ const HomePage = ({
     }
     return options;
   }, []);
+
+  // Logic to insert an ad into the list of homes
+  const homesWithAds = useMemo(() => {
+    const homesWithAds = [];
+    for (let i = 0; i < filteredHomes.length; i++) {
+      homesWithAds.push(filteredHomes[i]);
+      // Insert an ad after the 6th item
+      if (i + 1 === 6) {
+        homesWithAds.push({ isAd: true, id: `ad-${i}` });
+      }
+    }
+    return homesWithAds;
+  }, [filteredHomes]);
 
   return (
     <main>
@@ -173,23 +187,29 @@ const HomePage = ({
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h3 className="text-xl font-bold text-gray-700 mb-6">
           {isShowingFavorites
-            ? `Showing ${filteredHomes.length} homes in your shortlist`
+            ? `Showing ${totalFilteredHomes} homes in your shortlist`
             : filters.city === "all"
             ? `Showing ${totalFilteredHomes} of ${allHomes.length} homes in Ontario`
             : `Showing ${totalFilteredHomes} homes in ${filters.city}`}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredHomes.map((home) => (
-            <HomeCard
-              key={home.id}
-              home={home}
-              onViewDetails={onViewDetails}
-              isFavorite={favorites.includes(home.id)}
-              onToggleFavorite={onToggleFavorite}
-            />
-          ))}
+          {homesWithAds.map((item) =>
+            item.isAd ? (
+              <div key={item.id} className="md:col-span-2 lg:col-span-3">
+                <AdSense slot={process.env.REACT_APP_ADSENSE_SLOT_ID_1} />
+              </div>
+            ) : (
+              <HomeCard
+                key={item.id}
+                home={item}
+                onViewDetails={onViewDetails}
+                isFavorite={favorites.includes(item.id)}
+                onToggleFavorite={onToggleFavorite}
+              />
+            )
+          )}
         </div>
-        {filteredHomes.length === 0 && (
+        {filteredHomes.length === 0 && !costError && (
           <div className="text-center py-20 bg-white rounded-lg shadow-md col-span-full">
             <h3 className="font-heading text-3xl font-semibold text-gray-800">
               No Homes Found
