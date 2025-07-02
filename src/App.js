@@ -7,6 +7,8 @@ import HomePage from "./components/home/HomePage";
 import DetailsPage from "./components/details/DetailsPage";
 
 const GA_MEASUREMENT_ID = process.env.REACT_APP_GA_MEASUREMENT_ID;
+const ITEMS_PER_PAGE = 15; // Set how many homes to show per page
+
 const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
@@ -20,6 +22,7 @@ const App = () => {
   const [favorites, setFavorites] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [costError, setCostError] = useState("");
+  const [listPage, setListPage] = useState(1); // New state for pagination
 
   useEffect(() => {
     if (GA_MEASUREMENT_ID && GA_MEASUREMENT_ID !== "G-XXXXXXXXXX") {
@@ -42,6 +45,7 @@ const App = () => {
   };
 
   const handleFilterChange = (e) => {
+    setListPage(1); // Reset to first page on any filter change
     const { name, value } = e.target;
     const newFilters = { ...filters, [name]: value };
     setFilters(newFilters);
@@ -53,7 +57,6 @@ const App = () => {
     } else {
       setCostError("");
     }
-
     ReactGA.event({
       category: "Filter",
       action: `apply_filter_${name}`,
@@ -62,6 +65,7 @@ const App = () => {
   };
 
   const handleSearch = (e) => {
+    setListPage(1); // Reset to first page on search
     setSearchTerm(e.target.value);
     ReactGA.event({
       category: "Search",
@@ -75,26 +79,20 @@ const App = () => {
     setSearchTerm("");
     setShowFavorites(false);
     setCostError("");
+    setListPage(1); // Reset page on filter reset
     ReactGA.event({ category: "Filter", action: "reset_filters" });
   };
 
-  // FIX: New handler for the shortlist button to reset filters
   const handleShowFavoritesClick = () => {
     const newShowFavorites = !showFavorites;
     setShowFavorites(newShowFavorites);
+    setListPage(1); // Reset page when toggling favorites
 
-    // If we are showing the favorites, reset the other filters
     if (newShowFavorites) {
       setFilters({ city: "all", type: "all", minCost: "", maxCost: "" });
       setSearchTerm("");
       setCostError("");
     }
-
-    ReactGA.event({
-      category: "Navigation",
-      action: "click_shortlist",
-      label: newShowFavorites ? "View Shortlist" : "View All Homes",
-    });
   };
 
   const filteredHomes = useMemo(() => {
@@ -106,10 +104,11 @@ const App = () => {
       : homesData;
 
     if (searchTerm) {
+      const lowercasedSearchTerm = searchTerm.toLowerCase();
       result = result.filter(
         (h) =>
-          (h.name && h.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (h.city && h.city.toLowerCase().includes(searchTerm.toLowerCase()))
+          (h.name && h.name.toLowerCase().includes(lowercasedSearchTerm)) ||
+          (h.city && h.city.toLowerCase().includes(lowercasedSearchTerm))
       );
     }
     if (filters.city !== "all") {
@@ -148,7 +147,19 @@ const App = () => {
     setCurrentPage("list");
   };
 
+  const handlePageChange = (pageNumber) => {
+    setListPage(pageNumber);
+    window.scrollTo(0, 0);
+  };
+
   const selectedHome = homesData.find((home) => home.id === selectedHomeId);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredHomes.length / ITEMS_PER_PAGE);
+  const paginatedHomes = filteredHomes.slice(
+    (listPage - 1) * ITEMS_PER_PAGE,
+    listPage * ITEMS_PER_PAGE
+  );
 
   if (!homesData || !Array.isArray(homesData)) {
     return (
@@ -178,7 +189,8 @@ const App = () => {
       {currentPage === "list" && (
         <HomePage
           allHomes={homesData}
-          filteredHomes={filteredHomes}
+          filteredHomes={paginatedHomes} // Pass the paginated list
+          totalFilteredHomes={filteredHomes.length} // Pass the total count for the header
           filters={filters}
           searchTerm={searchTerm}
           onFilterChange={handleFilterChange}
@@ -189,6 +201,9 @@ const App = () => {
           onToggleFavorite={toggleFavorite}
           isShowingFavorites={showFavorites}
           costError={costError}
+          currentPage={listPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
         />
       )}
 

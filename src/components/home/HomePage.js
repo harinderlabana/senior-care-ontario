@@ -2,10 +2,12 @@ import React, { useMemo } from "react";
 import HomeCard from "./HomeCard";
 import { SearchIcon } from "../common/Icons";
 import Meta from "../common/Meta";
+import Pagination from "../common/Pagination"; // Import the new component
 
 const HomePage = ({
   allHomes,
   filteredHomes,
+  totalFilteredHomes,
   filters,
   searchTerm,
   onFilterChange,
@@ -16,6 +18,9 @@ const HomePage = ({
   onToggleFavorite,
   isShowingFavorites,
   costError,
+  currentPage,
+  totalPages,
+  onPageChange,
 }) => {
   const cities = [...new Set(allHomes.map((item) => item.city))].sort();
 
@@ -158,7 +163,6 @@ const HomePage = ({
               Reset
             </button>
           </div>
-          {/* Add this line to display the error */}
           {costError && (
             <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
               <p className="font-semibold">{costError}</p>
@@ -171,8 +175,8 @@ const HomePage = ({
           {isShowingFavorites
             ? `Showing ${filteredHomes.length} homes in your shortlist`
             : filters.city === "all"
-            ? `Showing ${filteredHomes.length} of ${allHomes.length} homes in Ontario`
-            : `Showing ${filteredHomes.length} homes in ${filters.city}`}
+            ? `Showing ${totalFilteredHomes} of ${allHomes.length} homes in Ontario`
+            : `Showing ${totalFilteredHomes} homes in ${filters.city}`}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredHomes.map((home) => (
@@ -197,6 +201,11 @@ const HomePage = ({
             </p>
           </div>
         )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
       </div>
     </main>
   );
