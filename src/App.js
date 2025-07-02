@@ -78,6 +78,25 @@ const App = () => {
     ReactGA.event({ category: "Filter", action: "reset_filters" });
   };
 
+  // FIX: New handler for the shortlist button to reset filters
+  const handleShowFavoritesClick = () => {
+    const newShowFavorites = !showFavorites;
+    setShowFavorites(newShowFavorites);
+
+    // If we are showing the favorites, reset the other filters
+    if (newShowFavorites) {
+      setFilters({ city: "all", type: "all", minCost: "", maxCost: "" });
+      setSearchTerm("");
+      setCostError("");
+    }
+
+    ReactGA.event({
+      category: "Navigation",
+      action: "click_shortlist",
+      label: newShowFavorites ? "View Shortlist" : "View All Homes",
+    });
+  };
+
   const filteredHomes = useMemo(() => {
     if (costError) return [];
     if (!Array.isArray(homesData)) return [];
@@ -87,12 +106,10 @@ const App = () => {
       : homesData;
 
     if (searchTerm) {
-      const lowercasedSearchTerm = searchTerm.toLowerCase();
-      // FIX: Check for existence of h.name and h.city before calling .toLowerCase()
       result = result.filter(
         (h) =>
-          (h.name && h.name.toLowerCase().includes(lowercasedSearchTerm)) ||
-          (h.city && h.city.toLowerCase().includes(lowercasedSearchTerm))
+          (h.name && h.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (h.city && h.city.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     if (filters.city !== "all") {
@@ -153,7 +170,7 @@ const App = () => {
             `}</style>
       <Header
         onBackToList={handleBackToList}
-        onShowFavorites={() => setShowFavorites(!showFavorites)}
+        onShowFavorites={handleShowFavoritesClick}
         favoritesCount={favorites.length}
         isShowingFavorites={showFavorites}
       />
