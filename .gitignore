@@ -22,8 +22,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Ignore the proprietary data file
-src/data/homesData.js
+ Dependencies
+/node_modules
 
-# Ignore environment variables file
+# Environment variables
+# This file contains your secret API keys
 .env
+
+# Data files
+# This ensures your proprietary CSVs and the final JS data file are not uploaded
+src/data/
+
