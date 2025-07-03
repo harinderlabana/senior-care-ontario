@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import ReactGA from "react-ga4";
-import { homesData } from "./data/homesData"; // Import real data
+import { homesData } from "./data/homesData";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import HomePage from "./components/home/HomePage";
 import DetailsPage from "./components/details/DetailsPage";
 
 const GA_MEASUREMENT_ID = process.env.REACT_APP_GA_MEASUREMENT_ID;
-const ITEMS_PER_PAGE = 15; // Set how many homes to show per page
+const ITEMS_PER_PAGE = 15;
 
 const App = () => {
   // State for the filters that are actively filtering the list
@@ -30,7 +30,15 @@ const App = () => {
 
   const [currentPage, setCurrentPage] = useState("list");
   const [selectedHomeId, setSelectedHomeId] = useState(null);
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const savedFavorites = localStorage.getItem("seniorCareFavorites");
+      return savedFavorites ? JSON.parse(savedFavorites) : [];
+    } catch (error) {
+      console.error("Could not parse favorites from localStorage", error);
+      return [];
+    }
+  });
   const [showFavorites, setShowFavorites] = useState(false);
   const [costError, setCostError] = useState("");
   const [listPage, setListPage] = useState(1);
@@ -40,6 +48,14 @@ const App = () => {
       ReactGA.initialize(GA_MEASUREMENT_ID);
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("seniorCareFavorites", JSON.stringify(favorites));
+    } catch (error) {
+      console.error("Could not save favorites to localStorage", error);
+    }
+  }, [favorites]);
 
   const toggleFavorite = (id) => {
     const isCurrentlyFavorite = favorites.includes(id);
@@ -77,10 +93,11 @@ const App = () => {
       maxCost: "",
     };
     setPendingFilters(initialFilters);
-    setActiveFilters(initialFilters);
+    if (!showFavorites) {
+      setActiveFilters(initialFilters);
+      setActiveSearchTerm("");
+    }
     setPendingSearchTerm("");
-    setActiveSearchTerm("");
-    setShowFavorites(false);
     setCostError("");
     setListPage(1);
   };
@@ -89,20 +106,20 @@ const App = () => {
     const newShowFavorites = !showFavorites;
     setShowFavorites(newShowFavorites);
     setListPage(1);
+    setCurrentPage("list");
+    setSelectedHomeId(null);
 
-    if (newShowFavorites) {
-      const initialFilters = {
-        city: "all",
-        type: "all",
-        minCost: "",
-        maxCost: "",
-      };
-      setPendingFilters(initialFilters);
-      setActiveFilters(initialFilters);
-      setPendingSearchTerm("");
-      setActiveSearchTerm("");
-      setCostError("");
-    }
+    const initialFilters = {
+      city: "all",
+      type: "all",
+      minCost: "",
+      maxCost: "",
+    };
+    setPendingFilters(initialFilters);
+    setActiveFilters(initialFilters);
+    setPendingSearchTerm("");
+    setActiveSearchTerm("");
+    setCostError("");
   };
 
   const filteredHomes = useMemo(() => {
@@ -129,12 +146,16 @@ const App = () => {
     }
     if (activeFilters.minCost) {
       result = result.filter(
-        (h) => h.max_cost && h.max_cost >= Number(activeFilters.minCost)
+        (h) =>
+          h.min_cost === null ||
+          (h.max_cost && h.max_cost >= Number(activeFilters.minCost))
       );
     }
     if (activeFilters.maxCost) {
       result = result.filter(
-        (h) => h.min_cost && h.min_cost <= Number(activeFilters.maxCost)
+        (h) =>
+          h.min_cost === null ||
+          (h.min_cost && h.min_cost <= Number(activeFilters.maxCost))
       );
     }
     return result;
@@ -150,6 +171,7 @@ const App = () => {
     setSelectedHomeId(null);
     setCurrentPage("list");
     setShowFavorites(false);
+    handleResetFilters();
   };
 
   const handlePageChange = (pageNumber) => {
@@ -175,7 +197,6 @@ const App = () => {
   }
 
   return (
-    // FIX: Removed overflow-x-hidden from the main container
     <div className="bg-[#F1E9DA] min-h-screen font-sans text-gray-800">
       <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Mulish:wght@400;600;700&display=swap');

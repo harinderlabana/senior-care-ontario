@@ -7,7 +7,6 @@ const Header = ({
   favoritesCount,
   isShowingFavorites,
 }) => (
-  // FIX: Re-added sticky positioning classes
   <header className="bg-white/95 shadow-sm sticky top-0 z-20 backdrop-blur-lg border-b border-gray-200">
     <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
       <button

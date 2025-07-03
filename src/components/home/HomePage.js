@@ -71,13 +71,12 @@ const HomePage = ({
   }, [filteredHomes]);
 
   return (
-    <main>
+    <main className="overflow-x-hidden">
       <Meta
         title="SeniorCare Ontario | Your Trusted Guide to Senior Care"
         description="Find the perfect retirement home or long-term care facility in Ontario. SeniorCare Ontario offers a trusted, comprehensive directory to help you find care with confidence."
       />
 
-      {/* FIX: New combined Hero and Filter section */}
       <section className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
