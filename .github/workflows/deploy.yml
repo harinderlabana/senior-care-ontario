@@ -12,11 +12,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install and Build
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4 googlemaps python-dotenv
+
+      - name: Generate Data File
+        run: python src/data/data_processing_script.py
+        env:
+          # Use the secrets you created in your GitHub repository settings
+          GOOGLE_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
+
+      - name: Install and Build React App
         run: |
           npm install
           npm run build
         env:
+          # These secrets are now used by the React build process
           REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
           REACT_APP_GA_MEASUREMENT_ID: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
           REACT_APP_ADSENSE_CLIENT_ID: ${{ secrets.REACT_APP_ADSENSE_CLIENT_ID }}
