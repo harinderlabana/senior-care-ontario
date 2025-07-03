@@ -9,7 +9,7 @@ import {
 import Meta from "../common/Meta";
 import JsonLdSchema from "../common/JsonLdSchema";
 import GoogleReview from "../common/GoogleReview";
-import AdSense from "../common/AdSense"; // Import the AdSense component
+import AdSense from "../common/AdSense";
 
 const DetailsPage = ({ home, onBack }) => {
   const [mainImage, setMainImage] = useState(home.image_url_1);
@@ -106,12 +106,12 @@ const DetailsPage = ({ home, onBack }) => {
                   Photo Gallery
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {galleryImages.map((img) => (
+                  {galleryImages.map((img, index) => (
                     <button
                       key={img}
                       onClick={() => setMainImage(img)}
                       className="rounded-lg overflow-hidden aspect-w-16 aspect-h-9"
-                      aria-label={`View image of ${home.name}`}
+                      aria-label={`View image ${index + 1} of ${home.name}`}
                     >
                       <img
                         loading="lazy"
@@ -208,7 +208,7 @@ const DetailsPage = ({ home, onBack }) => {
                   <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        home.address
+                        fullAddress
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -217,9 +217,9 @@ const DetailsPage = ({ home, onBack }) => {
                       <img
                         className="w-full h-full object-cover"
                         src={`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(
-                          home.address
+                          fullAddress
                         )}&zoom=14&size=600x400&markers=color:0x0c2d48%7C${encodeURIComponent(
-                          home.address
+                          fullAddress
                         )}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`}
                         alt={`Map showing location of ${home.name}`}
                       />
@@ -227,7 +227,7 @@ const DetailsPage = ({ home, onBack }) => {
                   </div>
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      home.address
+                      fullAddress
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -238,7 +238,6 @@ const DetailsPage = ({ home, onBack }) => {
                     Get Directions
                   </a>
                 </div>
-                {/* Add the AdSense component here */}
                 <div className="p-6 bg-white rounded-xl border-2 border-gray-200">
                   <h3 className="font-heading text-xl font-bold text-[#0c2d48] mb-4">
                     Advertisement
