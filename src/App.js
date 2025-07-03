@@ -77,8 +77,7 @@ const App = () => {
   const handleResetFilters = () => {
     setFilters({ city: "all", type: "all", minCost: "", maxCost: "" });
     setSearchTerm("");
-    // FIX: Do NOT change showFavorites state on reset
-    // setShowFavorites(false);
+    setShowFavorites(false);
     setCostError("");
     setListPage(1);
     ReactGA.event({ category: "Filter", action: "reset_filters" });
@@ -171,7 +170,7 @@ const App = () => {
   }
 
   return (
-    <div className="bg-[#F1E9DA] min-h-screen font-sans text-gray-800">
+    <div className="bg-[#F1E9DA] min-h-screen font-sans text-gray-800 w-full max-w-full overflow-x-hidden">
       <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Mulish:wght@400;600;700&display=swap');
                 body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
