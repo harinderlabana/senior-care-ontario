@@ -1,9 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import HomeCard from "./HomeCard";
 import { SearchIcon } from "../common/Icons";
 import Meta from "../common/Meta";
 import Pagination from "../common/Pagination";
-import AdSense from "../common/AdSense"; // Import the AdSense component
+import AdSense from "../common/AdSense";
 
 const HomePage = ({
   allHomes,
@@ -13,6 +13,7 @@ const HomePage = ({
   searchTerm,
   onFilterChange,
   onSearchChange,
+  onApplyFilters,
   onResetFilters,
   onViewDetails,
   favorites,
@@ -22,8 +23,33 @@ const HomePage = ({
   currentPage,
   totalPages,
   onPageChange,
+  setPendingSearchTerm,
 }) => {
-  const cities = [...new Set(allHomes.map((item) => item.city))].sort();
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const allCities = useMemo(
+    () =>
+      [...new Set(allHomes.map((item) => item.city).filter(Boolean))].sort(),
+    [allHomes]
+  );
+
+  useEffect(() => {
+    if (searchTerm) {
+      const suggestions = allCities.filter((city) =>
+        city.toLowerCase().startsWith(searchTerm.toLowerCase())
+      );
+      setCitySuggestions(suggestions);
+      setShowSuggestions(true);
+    } else {
+      setCitySuggestions([]);
+    }
+  }, [searchTerm, allCities]);
+
+  const handleSuggestionClick = (city) => {
+    setPendingSearchTerm(city);
+    setShowSuggestions(false); // This hides the suggestion box
+  };
 
   const priceOptions = useMemo(() => {
     const options = [];
@@ -33,12 +59,10 @@ const HomePage = ({
     return options;
   }, []);
 
-  // Logic to insert an ad into the list of homes
   const homesWithAds = useMemo(() => {
     const homesWithAds = [];
     for (let i = 0; i < filteredHomes.length; i++) {
       homesWithAds.push(filteredHomes[i]);
-      // Insert an ad after the 6th item
       if (i + 1 === 6) {
         homesWithAds.push({ isAd: true, id: `ad-${i}` });
       }
@@ -65,8 +89,8 @@ const HomePage = ({
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
         <div className="bg-white p-6 rounded-xl shadow-2xl border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-            <div className="lg:col-span-5 relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+            <div className="lg:col-span-6 relative">
               <label
                 htmlFor="search"
                 className="block text-sm font-semibold text-gray-700 mb-1"
@@ -81,9 +105,24 @@ const HomePage = ({
                 type="text"
                 value={searchTerm}
                 onChange={onSearchChange}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+                onFocus={() => setShowSuggestions(true)}
                 placeholder="e.g., Maplewood or Toronto"
                 className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#145DA0] focus:border-[#145DA0] text-lg"
               />
+              {citySuggestions.length > 0 && showSuggestions && (
+                <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-60 overflow-y-auto">
+                  {citySuggestions.map((city) => (
+                    <li
+                      key={city}
+                      onMouseDown={() => handleSuggestionClick(city)}
+                      className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                    >
+                      {city}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div>
               <label
@@ -100,7 +139,7 @@ const HomePage = ({
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#145DA0] focus:border-[#145DA0] text-base"
               >
                 <option value="all">All Cities</option>
-                {cities.map((city) => (
+                {allCities.map((city) => (
                   <option key={city} value={city}>
                     {city}
                   </option>
@@ -171,6 +210,12 @@ const HomePage = ({
               </select>
             </div>
             <button
+              onClick={onApplyFilters}
+              className="w-full bg-[#0c2d48] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#145DA0] transition-colors h-[50px]"
+            >
+              Apply
+            </button>
+            <button
               onClick={onResetFilters}
               className="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors h-[50px]"
             >
@@ -188,9 +233,7 @@ const HomePage = ({
         <h3 className="text-xl font-bold text-gray-700 mb-6">
           {isShowingFavorites
             ? `Showing ${totalFilteredHomes} homes in your shortlist`
-            : filters.city === "all"
-            ? `Showing ${totalFilteredHomes} of ${allHomes.length} homes in Ontario`
-            : `Showing ${totalFilteredHomes} homes in ${filters.city}`}
+            : `Showing ${totalFilteredHomes} results...`}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {homesWithAds.map((item) =>

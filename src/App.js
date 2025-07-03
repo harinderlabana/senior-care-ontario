@@ -10,13 +10,24 @@ const GA_MEASUREMENT_ID = process.env.REACT_APP_GA_MEASUREMENT_ID;
 const ITEMS_PER_PAGE = 15; // Set how many homes to show per page
 
 const App = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
+  // State for the filters that are actively filtering the list
+  const [activeFilters, setActiveFilters] = useState({
     city: "all",
     type: "all",
     minCost: "",
     maxCost: "",
   });
+  const [activeSearchTerm, setActiveSearchTerm] = useState("");
+
+  // State for the user's selections in the UI before they click "Apply"
+  const [pendingFilters, setPendingFilters] = useState({
+    city: "all",
+    type: "all",
+    minCost: "",
+    maxCost: "",
+  });
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+
   const [currentPage, setCurrentPage] = useState("list");
   const [selectedHomeId, setSelectedHomeId] = useState(null);
   const [favorites, setFavorites] = useState([]);
@@ -35,20 +46,12 @@ const App = () => {
     setFavorites((prev) =>
       isCurrentlyFavorite ? prev.filter((favId) => favId !== id) : [...prev, id]
     );
-    ReactGA.event({
-      category: "Engagement",
-      action: isCurrentlyFavorite
-        ? "remove_from_shortlist"
-        : "add_to_shortlist",
-      label: `Home ID: ${id}`,
-    });
   };
 
   const handleFilterChange = (e) => {
-    setListPage(1);
     const { name, value } = e.target;
-    const newFilters = { ...filters, [name]: value };
-    setFilters(newFilters);
+    const newFilters = { ...pendingFilters, [name]: value };
+    setPendingFilters(newFilters);
 
     const min = Number(newFilters.minCost);
     const max = Number(newFilters.maxCost);
@@ -57,30 +60,34 @@ const App = () => {
     } else {
       setCostError("");
     }
-    ReactGA.event({
-      category: "Filter",
-      action: `apply_filter_${name}`,
-      label: value,
-    });
   };
 
-  const handleSearch = (e) => {
+  const handleApplyFilters = () => {
+    if (costError) return;
     setListPage(1);
-    setSearchTerm(e.target.value);
+    setActiveFilters(pendingFilters);
+    setActiveSearchTerm(pendingSearchTerm); // Apply the pending search term
     ReactGA.event({
-      category: "Search",
-      action: "enter_search_term",
-      label: e.target.value,
+      category: "Filter",
+      action: "apply_filters",
+      label: JSON.stringify(pendingFilters),
     });
   };
 
   const handleResetFilters = () => {
-    setFilters({ city: "all", type: "all", minCost: "", maxCost: "" });
-    setSearchTerm("");
+    const initialFilters = {
+      city: "all",
+      type: "all",
+      minCost: "",
+      maxCost: "",
+    };
+    setPendingFilters(initialFilters);
+    setActiveFilters(initialFilters);
+    setPendingSearchTerm("");
+    setActiveSearchTerm("");
     setShowFavorites(false);
     setCostError("");
     setListPage(1);
-    ReactGA.event({ category: "Filter", action: "reset_filters" });
   };
 
   const handleShowFavoritesClick = () => {
@@ -89,57 +96,61 @@ const App = () => {
     setListPage(1);
 
     if (newShowFavorites) {
-      setFilters({ city: "all", type: "all", minCost: "", maxCost: "" });
-      setSearchTerm("");
+      const initialFilters = {
+        city: "all",
+        type: "all",
+        minCost: "",
+        maxCost: "",
+      };
+      setPendingFilters(initialFilters);
+      setActiveFilters(initialFilters);
+      setPendingSearchTerm("");
+      setActiveSearchTerm("");
       setCostError("");
     }
   };
 
   const filteredHomes = useMemo(() => {
-    if (costError) return [];
+    if (costError && !showFavorites) return [];
     if (!Array.isArray(homesData)) return [];
 
     let result = showFavorites
       ? homesData.filter((h) => favorites.includes(h.id))
       : homesData;
 
-    if (searchTerm) {
-      const lowercasedSearchTerm = searchTerm.toLowerCase();
+    // Use activeSearchTerm for the final list
+    if (activeSearchTerm) {
+      const lowercasedSearchTerm = activeSearchTerm.toLowerCase();
       result = result.filter(
         (h) =>
           (h.name && h.name.toLowerCase().includes(lowercasedSearchTerm)) ||
           (h.city && h.city.toLowerCase().includes(lowercasedSearchTerm))
       );
     }
-    if (filters.city !== "all") {
-      result = result.filter((h) => h.city === filters.city);
+    // Use activeFilters for the final list
+    if (activeFilters.city !== "all") {
+      result = result.filter((h) => h.city === activeFilters.city);
     }
-    if (filters.type !== "all") {
-      result = result.filter((h) => h.type === filters.type);
+    if (activeFilters.type !== "all") {
+      result = result.filter((h) => h.type === activeFilters.type);
     }
-    if (filters.minCost) {
+    if (activeFilters.minCost) {
       result = result.filter(
-        (h) => h.max_cost && h.max_cost >= Number(filters.minCost)
+        (h) => h.max_cost && h.max_cost >= Number(activeFilters.minCost)
       );
     }
-    if (filters.maxCost) {
+    if (activeFilters.maxCost) {
       result = result.filter(
-        (h) => h.min_cost && h.min_cost <= Number(filters.maxCost)
+        (h) => h.min_cost && h.min_cost <= Number(activeFilters.maxCost)
       );
     }
     return result;
-  }, [searchTerm, filters, favorites, showFavorites, costError]);
+  }, [activeSearchTerm, activeFilters, favorites, showFavorites, costError]);
 
   const handleViewDetails = (id) => {
     setSelectedHomeId(id);
     setCurrentPage("details");
     window.scrollTo(0, 0);
-    const home = homesData.find((h) => h.id === id);
-    ReactGA.event({
-      category: "Navigation",
-      action: "view_residence_details",
-      label: `${home.name} - ${home.city}`,
-    });
   };
 
   const handleBackToList = () => {
@@ -154,7 +165,6 @@ const App = () => {
   };
 
   const selectedHome = homesData.find((home) => home.id === selectedHomeId);
-
   const totalPages = Math.ceil(filteredHomes.length / ITEMS_PER_PAGE);
   const paginatedHomes = filteredHomes.slice(
     (listPage - 1) * ITEMS_PER_PAGE,
@@ -171,14 +181,7 @@ const App = () => {
 
   return (
     <div className="bg-[#F1E9DA] min-h-screen font-sans text-gray-800 w-full max-w-full overflow-x-hidden">
-      <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Mulish:wght@400;600;700&display=swap');
-                body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-                .font-heading { font-family: 'Playfair Display', serif; }
-                .font-sans { font-family: 'Mulish', sans-serif; }
-                .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-            `}</style>
+      <style>{/* ... */}</style>
       <Header
         onBackToList={handleBackToList}
         onShowFavorites={handleShowFavoritesClick}
@@ -191,10 +194,11 @@ const App = () => {
           allHomes={homesData}
           filteredHomes={paginatedHomes}
           totalFilteredHomes={filteredHomes.length}
-          filters={filters}
-          searchTerm={searchTerm}
+          filters={pendingFilters}
+          searchTerm={pendingSearchTerm}
           onFilterChange={handleFilterChange}
-          onSearchChange={handleSearch}
+          onSearchChange={(e) => setPendingSearchTerm(e.target.value)}
+          onApplyFilters={handleApplyFilters}
           onResetFilters={handleResetFilters}
           onViewDetails={handleViewDetails}
           favorites={favorites}
@@ -204,6 +208,7 @@ const App = () => {
           currentPage={listPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
+          setPendingSearchTerm={setPendingSearchTerm}
         />
       )}
 
