@@ -30,10 +30,30 @@ const App = () => {
 
   const [currentPage, setCurrentPage] = useState("list");
   const [selectedHomeId, setSelectedHomeId] = useState(null);
-  const [favorites, setFavorites] = useState([]);
+
+  // FIX: Initialize favorites from localStorage
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const savedFavorites = localStorage.getItem("seniorCareFavorites");
+      return savedFavorites ? JSON.parse(savedFavorites) : [];
+    } catch (error) {
+      console.error("Could not parse favorites from localStorage", error);
+      return [];
+    }
+  });
+
   const [showFavorites, setShowFavorites] = useState(false);
   const [costError, setCostError] = useState("");
   const [listPage, setListPage] = useState(1);
+
+  // FIX: Save favorites to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem("seniorCareFavorites", JSON.stringify(favorites));
+    } catch (error) {
+      console.error("Could not save favorites to localStorage", error);
+    }
+  }, [favorites]);
 
   useEffect(() => {
     if (GA_MEASUREMENT_ID && GA_MEASUREMENT_ID !== "G-XXXXXXXXXX") {
@@ -67,11 +87,6 @@ const App = () => {
     setListPage(1);
     setActiveFilters(pendingFilters);
     setActiveSearchTerm(pendingSearchTerm);
-    ReactGA.event({
-      category: "Filter",
-      action: "apply_filters",
-      label: JSON.stringify(pendingFilters),
-    });
   };
 
   const handleResetFilters = () => {
@@ -82,10 +97,11 @@ const App = () => {
       maxCost: "",
     };
     setPendingFilters(initialFilters);
-    setActiveFilters(initialFilters);
-    setPendingSearchTerm("");
-    setActiveSearchTerm("");
-    setShowFavorites(false);
+    // Only reset active filters if not currently viewing shortlist
+    if (!showFavorites) {
+      setActiveFilters(initialFilters);
+      setActiveSearchTerm("");
+    }
     setCostError("");
     setListPage(1);
   };
@@ -95,6 +111,7 @@ const App = () => {
     setShowFavorites(newShowFavorites);
     setListPage(1);
 
+    // When showing favorites, clear any pending/active filters
     if (newShowFavorites) {
       const initialFilters = {
         city: "all",
@@ -115,8 +132,8 @@ const App = () => {
     if (!Array.isArray(homesData)) return [];
 
     let result = showFavorites
-      ? homesData.filter((h) => favorites.includes(h.id))
-      : homesData;
+      ? homesData.filter((h) => h && favorites.includes(h.id))
+      : homesData.filter(Boolean);
 
     if (activeSearchTerm) {
       const lowercasedSearchTerm = activeSearchTerm.toLowerCase();
@@ -132,23 +149,17 @@ const App = () => {
     if (activeFilters.type !== "all") {
       result = result.filter((h) => h.type === activeFilters.type);
     }
-
-    // FIX: Updated cost filtering logic
     if (activeFilters.minCost) {
       result = result.filter(
         (h) =>
-          // Keep the home if its price is unknown (min_cost is null)
           h.min_cost === null ||
-          // Or if its price is within the range
           (h.max_cost && h.max_cost >= Number(activeFilters.minCost))
       );
     }
     if (activeFilters.maxCost) {
       result = result.filter(
         (h) =>
-          // Keep the home if its price is unknown (min_cost is null)
           h.min_cost === null ||
-          // Or if its price is within the range
           (h.min_cost && h.min_cost <= Number(activeFilters.maxCost))
       );
     }
@@ -172,7 +183,9 @@ const App = () => {
     window.scrollTo(0, 0);
   };
 
-  const selectedHome = homesData.find((home) => home.id === selectedHomeId);
+  const selectedHome = homesData.find(
+    (home) => home && home.id === selectedHomeId
+  );
   const totalPages = Math.ceil(filteredHomes.length / ITEMS_PER_PAGE);
   const paginatedHomes = filteredHomes.slice(
     (listPage - 1) * ITEMS_PER_PAGE,

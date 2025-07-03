@@ -35,12 +35,11 @@ const HomePage = ({
   );
 
   useEffect(() => {
-    if (searchTerm) {
+    if (searchTerm && searchTerm.length > 1) {
       const suggestions = allCities.filter((city) =>
         city.toLowerCase().startsWith(searchTerm.toLowerCase())
       );
       setCitySuggestions(suggestions);
-      setShowSuggestions(true);
     } else {
       setCitySuggestions([]);
     }
@@ -105,8 +104,8 @@ const HomePage = ({
                 type="text"
                 value={searchTerm}
                 onChange={onSearchChange}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
                 onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
                 placeholder="e.g., Maplewood or Toronto"
                 className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#145DA0] focus:border-[#145DA0] text-lg"
               />
