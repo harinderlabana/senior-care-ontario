@@ -30,30 +30,10 @@ const App = () => {
 
   const [currentPage, setCurrentPage] = useState("list");
   const [selectedHomeId, setSelectedHomeId] = useState(null);
-
-  // FIX: Initialize favorites from localStorage
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const savedFavorites = localStorage.getItem("seniorCareFavorites");
-      return savedFavorites ? JSON.parse(savedFavorites) : [];
-    } catch (error) {
-      console.error("Could not parse favorites from localStorage", error);
-      return [];
-    }
-  });
-
+  const [favorites, setFavorites] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [costError, setCostError] = useState("");
   const [listPage, setListPage] = useState(1);
-
-  // FIX: Save favorites to localStorage whenever they change
-  useEffect(() => {
-    try {
-      localStorage.setItem("seniorCareFavorites", JSON.stringify(favorites));
-    } catch (error) {
-      console.error("Could not save favorites to localStorage", error);
-    }
-  }, [favorites]);
 
   useEffect(() => {
     if (GA_MEASUREMENT_ID && GA_MEASUREMENT_ID !== "G-XXXXXXXXXX") {
@@ -97,11 +77,10 @@ const App = () => {
       maxCost: "",
     };
     setPendingFilters(initialFilters);
-    // Only reset active filters if not currently viewing shortlist
-    if (!showFavorites) {
-      setActiveFilters(initialFilters);
-      setActiveSearchTerm("");
-    }
+    setActiveFilters(initialFilters);
+    setPendingSearchTerm("");
+    setActiveSearchTerm("");
+    setShowFavorites(false);
     setCostError("");
     setListPage(1);
   };
@@ -111,7 +90,6 @@ const App = () => {
     setShowFavorites(newShowFavorites);
     setListPage(1);
 
-    // When showing favorites, clear any pending/active filters
     if (newShowFavorites) {
       const initialFilters = {
         city: "all",
@@ -151,16 +129,12 @@ const App = () => {
     }
     if (activeFilters.minCost) {
       result = result.filter(
-        (h) =>
-          h.min_cost === null ||
-          (h.max_cost && h.max_cost >= Number(activeFilters.minCost))
+        (h) => h.max_cost && h.max_cost >= Number(activeFilters.minCost)
       );
     }
     if (activeFilters.maxCost) {
       result = result.filter(
-        (h) =>
-          h.min_cost === null ||
-          (h.min_cost && h.min_cost <= Number(activeFilters.maxCost))
+        (h) => h.min_cost && h.min_cost <= Number(activeFilters.maxCost)
       );
     }
     return result;
@@ -201,8 +175,16 @@ const App = () => {
   }
 
   return (
-    <div className="bg-[#F1E9DA] min-h-screen font-sans text-gray-800 w-full max-w-full overflow-x-hidden">
-      <style>{/* ... */}</style>
+    // FIX: Removed overflow-x-hidden from the main container
+    <div className="bg-[#F1E9DA] min-h-screen font-sans text-gray-800">
+      <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Mulish:wght@400;600;700&display=swap');
+                body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+                .font-heading { font-family: 'Playfair Display', serif; }
+                .font-sans { font-family: 'Mulish', sans-serif; }
+                .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            `}</style>
       <Header
         onBackToList={handleBackToList}
         onShowFavorites={handleShowFavoritesClick}
