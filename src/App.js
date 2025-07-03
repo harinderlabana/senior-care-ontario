@@ -66,7 +66,7 @@ const App = () => {
     if (costError) return;
     setListPage(1);
     setActiveFilters(pendingFilters);
-    setActiveSearchTerm(pendingSearchTerm); // Apply the pending search term
+    setActiveSearchTerm(pendingSearchTerm);
     ReactGA.event({
       category: "Filter",
       action: "apply_filters",
@@ -118,7 +118,6 @@ const App = () => {
       ? homesData.filter((h) => favorites.includes(h.id))
       : homesData;
 
-    // Use activeSearchTerm for the final list
     if (activeSearchTerm) {
       const lowercasedSearchTerm = activeSearchTerm.toLowerCase();
       result = result.filter(
@@ -127,21 +126,30 @@ const App = () => {
           (h.city && h.city.toLowerCase().includes(lowercasedSearchTerm))
       );
     }
-    // Use activeFilters for the final list
     if (activeFilters.city !== "all") {
       result = result.filter((h) => h.city === activeFilters.city);
     }
     if (activeFilters.type !== "all") {
       result = result.filter((h) => h.type === activeFilters.type);
     }
+
+    // FIX: Updated cost filtering logic
     if (activeFilters.minCost) {
       result = result.filter(
-        (h) => h.max_cost && h.max_cost >= Number(activeFilters.minCost)
+        (h) =>
+          // Keep the home if its price is unknown (min_cost is null)
+          h.min_cost === null ||
+          // Or if its price is within the range
+          (h.max_cost && h.max_cost >= Number(activeFilters.minCost))
       );
     }
     if (activeFilters.maxCost) {
       result = result.filter(
-        (h) => h.min_cost && h.min_cost <= Number(activeFilters.maxCost)
+        (h) =>
+          // Keep the home if its price is unknown (min_cost is null)
+          h.min_cost === null ||
+          // Or if its price is within the range
+          (h.min_cost && h.min_cost <= Number(activeFilters.maxCost))
       );
     }
     return result;
