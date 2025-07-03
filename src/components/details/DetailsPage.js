@@ -243,10 +243,7 @@ const DetailsPage = ({ home, onBack }) => {
                   <h3 className="font-heading text-xl font-bold text-[#0c2d48] mb-4">
                     Advertisement
                   </h3>
-                  <AdSense
-                    client={process.env.REACT_APP_ADSENSE_CLIENT_ID}
-                    slot="YOUR_AD_SLOT_ID_2"
-                  />
+                  <AdSense slot={process.env.REACT_APP_ADSENSE_SLOT_ID_2} />
                 </div>
               </div>
             </aside>
