@@ -35,11 +35,12 @@ const HomePage = ({
   );
 
   useEffect(() => {
-    if (searchTerm && searchTerm.length > 1) {
+    if (searchTerm) {
       const suggestions = allCities.filter((city) =>
         city.toLowerCase().startsWith(searchTerm.toLowerCase())
       );
       setCitySuggestions(suggestions);
+      setShowSuggestions(true);
     } else {
       setCitySuggestions([]);
     }
@@ -47,7 +48,7 @@ const HomePage = ({
 
   const handleSuggestionClick = (city) => {
     setPendingSearchTerm(city);
-    setShowSuggestions(false); // This hides the suggestion box
+    setShowSuggestions(false);
   };
 
   const priceOptions = useMemo(() => {
@@ -228,6 +229,27 @@ const HomePage = ({
           )}
         </div>
       </div>
+
+      {/* FIX: Added new content section */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+          <h2 className="font-heading text-3xl font-bold text-[#0c2d48] mb-4">
+            Your Trusted Guide to Senior Care in Ontario
+          </h2>
+          <p className="text-lg text-gray-700 leading-relaxed">
+            Finding the right care for a loved one is one of the most important
+            decisions you'll make. SeniorCare Ontario is here to provide clarity
+            and confidence on that journey. Our comprehensive directory features
+            licensed retirement homes and long-term care facilities across the
+            province. Use our powerful search and filter tools to find the
+            perfect home that meets your family's unique needs, from care type
+            and location to budget and specific amenities. We are committed to
+            providing a transparent and easy-to-use resource to help you find
+            peace of mind.
+          </p>
+        </div>
+      </section>
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h3 className="text-xl font-bold text-gray-700 mb-6">
           {isShowingFavorites
