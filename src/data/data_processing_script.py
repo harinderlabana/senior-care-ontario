@@ -1,5 +1,3 @@
-import os
-from dotenv import load_dotenv
 import pandas as pd
 import re
 import numpy as np
@@ -8,6 +6,9 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import sys
+import os
+from dotenv import load_dotenv
+
 # Make sure to install the Google Maps library: pip3 install googlemaps
 try:
     import googlemaps
@@ -17,12 +18,12 @@ except ImportError:
     sys.exit(1)
 
 # --- Configuration ---
-# Load environment variables from .env file
+# FIX: Load environment variables and prioritize the one set by GitHub Actions
 load_dotenv()
-GOOGLE_API_KEY = os.getenv("REACT_APP_GOOGLE_MAPS_API_KEY")
-# This is the same key you use for the Places API.
-# You will also need to enable the "Generative Language API" in your Google Cloud project.
-GEMINI_API_KEY = GOOGLE_API_KEY 
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") # This is for the GitHub Action
+if not GOOGLE_API_KEY:
+    # Fallback for local development using .env file
+    GOOGLE_API_KEY = os.getenv("REACT_APP_GOOGLE_MAPS_API_KEY")
 
 LTC_HOMES_FILE = 'Ontario SeniorCare Compass - Long Term Care Homes.csv'
 RETIREMENT_HOMES_FILE = 'Ontario SeniorCare Compass - Retirement Homes.csv'
@@ -54,75 +55,10 @@ def parse_rating(rating_string):
         except (ValueError, IndexError): return np.nan
     return np.nan
 
-def scrape_website_for_text(url):
-    """
-    Scrapes the main textual content from a given URL by looking for common content containers.
-    """
-    if not pd.notna(url) or 'http' not in str(url):
-        return None
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-        response = requests.get(url, headers=headers, timeout=15)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            content_tags = ['main', 'article', 'div[id*="main"]', 'div[id*="content"]', 'div[class*="main"]', 'div[class*="content"]']
-            text_content = ''
-            for tag in content_tags:
-                content_area = soup.select_one(tag)
-                if content_area:
-                    text_content = content_area.get_text(separator=' ', strip=True)
-                    break 
-            
-            # FIX: Check if soup.body exists before trying to get text from it.
-            if not text_content and soup.body:
-                text_content = soup.body.get_text(separator=' ', strip=True)
-
-            cleaned_text = re.sub(r'\s+', ' ', text_content)
-            return cleaned_text[:2500]
-    except requests.RequestException as e:
-        print(f"      -> Scraping failed for {url}: {e}")
-    return None
-
-def enhance_description_with_ai(text, home_name):
-    """Uses a generative model to rewrite the description."""
-    if not text:
-        print(f"      -> No text scraped for {home_name}. Using default description.")
-        return f"A trusted provider of senior care in its community, offering a range of services to meet the needs of its residents."
-
-    print(f"      -> Enhancing description for {home_name} with AI...")
-    
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-    
-    prompt = f"""
-    Based on the following raw text from a senior care home's website, please write a warm, professional, and welcoming "About This Residence" description of about 80-120 words for a directory website. 
-    Focus on the community's philosophy, atmosphere, and the lifestyle it offers. Ignore navigation links, copyright notices, and other non-descriptive text.
-    
-    RAW TEXT:
-    ---
-    {text}
-    ---
-    
-    REWRITTEN DESCRIPTION:
-    """
-    
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-    headers = {'Content-Type': 'application/json'}
-    
-    try:
-        response = requests.post(api_url, headers=headers, json=payload, timeout=20)
-        if response.status_code == 200:
-            result = response.json()
-            enhanced_text = result['candidates'][0]['content']['parts'][0]['text']
-            return enhanced_text.strip()
-        else:
-            print(f"      -> AI enhancement failed with status {response.status_code}: {response.text}")
-            return text
-    except requests.RequestException as e:
-        print(f"      -> AI API call failed: {e}")
-        return text
-
 def get_google_place_details(gmaps_client, home_name, address):
+    """
+    Uses the Google Places API to find a business and retrieve photos, reviews, ratings, and city.
+    """
     default_return = {'photos': [], 'reviews': [], 'rating': 0.0, 'review_count': 0, 'city': None}
     if not isinstance(home_name, str) or not home_name.strip():
         return default_return
@@ -181,8 +117,9 @@ def get_google_place_details(gmaps_client, home_name, address):
 
 # --- Main Script Execution ---
 if __name__ == "__main__":
-    if GOOGLE_API_KEY == "YOUR_GOOGLE_MAPS_API_KEY_HERE":
-        print("FATAL ERROR: You have not added your Google Maps API Key to the script.")
+    if not GOOGLE_API_KEY:
+        print("FATAL ERROR: GOOGLE_API_KEY not found.")
+        print("Please ensure it's set in your .env file (for local) or as a GitHub Secret (for deployment).")
         sys.exit(1)
 
     print("Starting data processing script...")
@@ -221,25 +158,27 @@ if __name__ == "__main__":
     combined_df = combined_df[combined_df['name'].str.strip() != '']
     combined_df['id'] = range(1, len(combined_df) + 1)
 
-    print("\nStarting live data fetch & enhancement (this may take several minutes)...")
+    print("\nStarting live data fetch from Google Places API (this may take several minutes)...")
     api_data = combined_df.apply(lambda row: get_google_place_details(gmaps, row['name'], row['address']), axis=1)
-    
-    print("\nScraping websites for descriptions...")
-    scraped_texts = combined_df.apply(lambda row: scrape_website_for_text(row.get('website')), axis=1)
-    print("Enhancing descriptions with AI...")
-    enhanced_descriptions = [enhance_description_with_ai(text, name) for text, name in zip(scraped_texts, combined_df['name'])]
-    
+    print("API data fetch complete.")
+
     api_df = pd.json_normalize(api_data)
 
     combined_df['google_review'] = pd.Series(np.where(api_df['rating'] > 0, api_df['rating'], combined_df['google_review'])).fillna(0).round(1)
     combined_df['number_of_reviews'] = pd.Series(np.where(api_df['review_count'] > 0, api_df['review_count'], combined_df.get('number_of_reviews'))).fillna(0).astype(int)
     combined_df['city'] = api_df['city'].fillna(combined_df['city'])
-    combined_df['description'] = enhanced_descriptions
     
     combined_df['image_url_1'] = api_df['photos'].apply(lambda x: x[0] if x and len(x) > 0 else PLACEHOLDER_IMAGE)
     combined_df['image_url_2'] = api_df['photos'].apply(lambda x: x[1] if x and len(x) > 1 else PLACEHOLDER_IMAGE)
     combined_df['image_url_3'] = api_df['photos'].apply(lambda x: x[2] if x and len(x) > 2 else PLACEHOLDER_IMAGE)
     combined_df['reviews'] = api_df['reviews']
+
+    for col in ['name', 'city', 'address', 'postal_code', 'phone', 'website', 'amenities', 'pricing_info', 'description']:
+        if col not in combined_df.columns:
+            combined_df[col] = ''
+        combined_df[col] = combined_df[col].astype(str).str.strip().replace('nan', '')
+    
+    combined_df['description'] = combined_df['description'].fillna("A trusted provider of senior care in its community, offering a range of services to meet the needs of its residents.")
 
     final_columns = [
         'id', 'name', 'type', 'address', 'city', 'postal_code', 'phone', 'website',
