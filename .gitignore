@@ -31,6 +31,5 @@ yarn-error.log*
 
 # Data files
 # This ensures your proprietary CSVs and the final JS data file are not uploaded
-src/data/*.csv
-src/data/*.js
+src/data/
 
