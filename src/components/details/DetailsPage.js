@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
 import ReactGA from "react-ga4";
 import {
   BackArrowIcon,
@@ -11,8 +12,19 @@ import JsonLdSchema from "../common/JsonLdSchema";
 import GoogleReview from "../common/GoogleReview";
 import AdSense from "../common/AdSense";
 
-const DetailsPage = ({ home, onBack }) => {
-  const [mainImage, setMainImage] = useState(home.image_url_1);
+const DetailsPage = ({ allHomes }) => {
+  const { homeId } = useParams();
+  const home = allHomes.find((h) => h.id === parseInt(homeId));
+
+  // FIX: Moved useState calls to the top level of the component
+  const [mainImage, setMainImage] = useState(home ? home.image_url_1 : null);
+
+  if (!home) {
+    return (
+      <div className="container mx-auto p-8 text-center">Home not found.</div>
+    );
+  }
+
   const galleryImages = [
     home.image_url_1,
     home.image_url_2,
@@ -37,13 +49,13 @@ const DetailsPage = ({ home, onBack }) => {
       />
       <JsonLdSchema home={home} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button
-          onClick={onBack}
+        <Link
+          to="/"
           className="inline-flex items-center mb-8 px-4 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-100 transition-colors"
         >
           <BackArrowIcon className="h-5 w-5 mr-2 text-gray-600" />
           Back to Directory
-        </button>
+        </Link>
         <article className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="relative">
             <img
@@ -207,7 +219,7 @@ const DetailsPage = ({ home, onBack }) => {
                   </h3>
                   <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
                     <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      href={`https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(
                         fullAddress
                       )}`}
                       target="_blank"
@@ -220,13 +232,13 @@ const DetailsPage = ({ home, onBack }) => {
                           fullAddress
                         )}&zoom=14&size=600x400&markers=color:0x0c2d48%7C${encodeURIComponent(
                           fullAddress
-                        )}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`}
+                        )}&key=YOUR_API_KEY`}
                         alt={`Map showing location of ${home.name}`}
                       />
                     </a>
                   </div>
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    href={`https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(
                       fullAddress
                     )}`}
                     target="_blank"
@@ -237,12 +249,6 @@ const DetailsPage = ({ home, onBack }) => {
                     <DirectionsIcon className="h-5 w-5 mr-2" />
                     Get Directions
                   </a>
-                </div>
-                <div className="p-6 bg-white rounded-xl border-2 border-gray-200">
-                  <h3 className="font-heading text-xl font-bold text-[#0c2d48] mb-4">
-                    Advertisement
-                  </h3>
-                  <AdSense slot={process.env.REACT_APP_ADSENSE_SLOT_ID_2} />
                 </div>
               </div>
             </aside>

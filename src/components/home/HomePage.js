@@ -1,30 +1,33 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import HomeCard from "./HomeCard";
-import { SearchIcon } from "../common/Icons";
+import {
+  SearchIcon,
+  CheckmarkIcon,
+  HeartIcon,
+  BuildingIcon,
+} from "../common/Icons";
 import Meta from "../common/Meta";
 import Pagination from "../common/Pagination";
 import AdSense from "../common/AdSense";
 
-const HomePage = ({
-  allHomes,
-  filteredHomes,
-  totalFilteredHomes,
-  filters,
-  searchTerm,
-  onFilterChange,
-  onSearchChange,
-  onApplyFilters,
-  onResetFilters,
-  onViewDetails,
-  favorites,
-  onToggleFavorite,
-  isShowingFavorites,
-  costError,
-  currentPage,
-  totalPages,
-  onPageChange,
-  setPendingSearchTerm,
-}) => {
+const HomePage = ({ allHomes, favorites, onToggleFavorite }) => {
+  const [activeFilters, setActiveFilters] = useState({
+    city: "all",
+    type: "all",
+    minCost: "",
+    maxCost: "",
+  });
+  const [pendingFilters, setPendingFilters] = useState({
+    city: "all",
+    type: "all",
+    minCost: "",
+    maxCost: "",
+  });
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  const [activeSearchTerm, setActiveSearchTerm] = useState("");
+  const [costError, setCostError] = useState("");
+  const [listPage, setListPage] = useState(1);
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -34,21 +37,114 @@ const HomePage = ({
     [allHomes]
   );
 
+  const topCities = useMemo(() => {
+    const cityCounts = allHomes.reduce((acc, home) => {
+      if (home.city) acc[home.city] = (acc[home.city] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(cityCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map((entry) => entry[0]);
+  }, [allHomes]);
+
   useEffect(() => {
-    if (searchTerm) {
+    if (pendingSearchTerm) {
       const suggestions = allCities.filter((city) =>
-        city.toLowerCase().startsWith(searchTerm.toLowerCase())
+        city.toLowerCase().startsWith(pendingSearchTerm.toLowerCase())
       );
       setCitySuggestions(suggestions);
-      setShowSuggestions(true);
     } else {
       setCitySuggestions([]);
     }
-  }, [searchTerm, allCities]);
+  }, [pendingSearchTerm, allCities]);
 
   const handleSuggestionClick = (city) => {
     setPendingSearchTerm(city);
     setShowSuggestions(false);
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    const newFilters = { ...pendingFilters, [name]: value };
+    setPendingFilters(newFilters);
+
+    const min = Number(newFilters.minCost);
+    const max = Number(newFilters.maxCost);
+    if (min && max && max < min) {
+      setCostError("Maximum cost cannot be less than the minimum cost.");
+    } else {
+      setCostError("");
+    }
+  };
+
+  const handleApplyFilters = () => {
+    if (costError) return;
+    setListPage(1);
+    setActiveFilters(pendingFilters);
+    setActiveSearchTerm(pendingSearchTerm);
+  };
+
+  const onResetFilters = () => {
+    const initialFilters = {
+      city: "all",
+      type: "all",
+      minCost: "",
+      maxCost: "",
+    };
+    setPendingFilters(initialFilters);
+    setActiveFilters(initialFilters);
+    setPendingSearchTerm("");
+    setActiveSearchTerm("");
+    setCostError("");
+    setListPage(1);
+  };
+
+  const filteredHomes = useMemo(() => {
+    if (costError) return [];
+    let result = allHomes.filter(Boolean);
+
+    if (activeSearchTerm) {
+      const lowercasedSearchTerm = activeSearchTerm.toLowerCase();
+      result = result.filter(
+        (h) =>
+          (h.name && h.name.toLowerCase().includes(lowercasedSearchTerm)) ||
+          (h.city && h.city.toLowerCase().includes(lowercasedSearchTerm))
+      );
+    }
+    if (activeFilters.city !== "all") {
+      result = result.filter((h) => h.city === activeFilters.city);
+    }
+    if (activeFilters.type !== "all") {
+      result = result.filter((h) => h.type === activeFilters.type);
+    }
+    if (activeFilters.minCost) {
+      result = result.filter(
+        (h) =>
+          h.min_cost === null ||
+          (h.max_cost && h.max_cost >= Number(activeFilters.minCost))
+      );
+    }
+    if (activeFilters.maxCost) {
+      result = result.filter(
+        (h) =>
+          h.min_cost === null ||
+          (h.min_cost && h.min_cost <= Number(activeFilters.maxCost))
+      );
+    }
+    return result;
+  }, [activeSearchTerm, activeFilters, allHomes, costError]);
+
+  const totalFilteredHomes = filteredHomes.length;
+  const totalPages = Math.ceil(totalFilteredHomes / 15);
+  const paginatedHomes = filteredHomes.slice(
+    (listPage - 1) * 15,
+    listPage * 15
+  );
+
+  const handlePageChange = (pageNumber) => {
+    setListPage(pageNumber);
+    window.scrollTo(0, 0);
   };
 
   const priceOptions = useMemo(() => {
@@ -61,22 +157,21 @@ const HomePage = ({
 
   const homesWithAds = useMemo(() => {
     const homesWithAds = [];
-    for (let i = 0; i < filteredHomes.length; i++) {
-      homesWithAds.push(filteredHomes[i]);
+    for (let i = 0; i < paginatedHomes.length; i++) {
+      homesWithAds.push(paginatedHomes[i]);
       if (i + 1 === 6) {
         homesWithAds.push({ isAd: true, id: `ad-${i}` });
       }
     }
     return homesWithAds;
-  }, [filteredHomes]);
+  }, [paginatedHomes]);
 
   return (
-    <main className="overflow-x-hidden">
+    <main>
       <Meta
         title="SeniorCare Ontario | Your Trusted Guide to Senior Care"
         description="Find the perfect retirement home or long-term care facility in Ontario. SeniorCare Ontario offers a trusted, comprehensive directory to help you find care with confidence."
       />
-
       <section className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -106,11 +201,11 @@ const HomePage = ({
                   <input
                     id="search"
                     type="text"
-                    value={searchTerm}
-                    onChange={onSearchChange}
+                    value={pendingSearchTerm}
+                    onChange={(e) => setPendingSearchTerm(e.target.value)}
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() =>
-                      setTimeout(() => setShowSuggestions(false), 100)
+                      setTimeout(() => setShowSuggestions(false), 150)
                     }
                     placeholder="e.g., Maplewood or Toronto"
                     className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#145DA0] focus:border-[#145DA0] text-lg"
@@ -139,8 +234,8 @@ const HomePage = ({
                   <select
                     id="cityFilter"
                     name="city"
-                    value={filters.city}
-                    onChange={onFilterChange}
+                    value={pendingFilters.city}
+                    onChange={handleFilterChange}
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#145DA0] focus:border-[#145DA0] text-base"
                   >
                     <option value="all">All Cities</option>
@@ -161,8 +256,8 @@ const HomePage = ({
                   <select
                     id="typeFilter"
                     name="type"
-                    value={filters.type}
-                    onChange={onFilterChange}
+                    value={pendingFilters.type}
+                    onChange={handleFilterChange}
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#145DA0] focus:border-[#145DA0] text-base"
                   >
                     <option value="all">All Types</option>
@@ -180,8 +275,8 @@ const HomePage = ({
                   <select
                     id="minCost"
                     name="minCost"
-                    value={filters.minCost}
-                    onChange={onFilterChange}
+                    value={pendingFilters.minCost}
+                    onChange={handleFilterChange}
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#145DA0] focus:border-[#145DA0] text-base"
                   >
                     <option value="">Any</option>
@@ -202,8 +297,8 @@ const HomePage = ({
                   <select
                     id="maxCost"
                     name="maxCost"
-                    value={filters.maxCost}
-                    onChange={onFilterChange}
+                    value={pendingFilters.maxCost}
+                    onChange={handleFilterChange}
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#145DA0] focus:border-[#145DA0] text-base"
                   >
                     <option value="">Any</option>
@@ -216,7 +311,7 @@ const HomePage = ({
                 </div>
                 <div className="sm:col-span-2 grid grid-cols-2 gap-4">
                   <button
-                    onClick={onApplyFilters}
+                    onClick={handleApplyFilters}
                     className="w-full bg-[#0c2d48] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#145DA0] transition-colors h-[50px]"
                   >
                     Apply
@@ -239,11 +334,29 @@ const HomePage = ({
         </div>
       </section>
 
+      {/* FIX: Moved "Explore by City" section here */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+        <div className="text-center">
+          <h2 className="font-heading text-3xl md:text-4xl font-bold text-[#0c2d48]">
+            Explore by City
+          </h2>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            {topCities.map((city) => (
+              <Link
+                key={city}
+                to={`/city/${city.toLowerCase()}`}
+                className="px-6 py-3 bg-white rounded-lg shadow hover:shadow-lg transition-shadow font-semibold text-[#145DA0]"
+              >
+                {city}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h3 className="text-xl font-bold text-gray-700 mb-6">
-          {isShowingFavorites
-            ? `Showing ${totalFilteredHomes} homes in your shortlist`
-            : `Showing ${totalFilteredHomes} results...`}
+          Showing {totalFilteredHomes} results...
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {homesWithAds.map((item) =>
@@ -255,7 +368,6 @@ const HomePage = ({
               <HomeCard
                 key={item.id}
                 home={item}
-                onViewDetails={onViewDetails}
                 isFavorite={favorites.includes(item.id)}
                 onToggleFavorite={onToggleFavorite}
               />
@@ -268,16 +380,14 @@ const HomePage = ({
               No Homes Found
             </h3>
             <p className="text-gray-500 mt-2 text-lg">
-              {isShowingFavorites
-                ? "You haven't added any homes to your shortlist yet."
-                : "Please try adjusting your search or filters."}
+              Please try adjusting your search or filters.
             </p>
           </div>
         )}
         <Pagination
-          currentPage={currentPage}
+          currentPage={listPage}
           totalPages={totalPages}
-          onPageChange={onPageChange}
+          onPageChange={handlePageChange}
         />
       </div>
     </main>
