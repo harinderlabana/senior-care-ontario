@@ -11,6 +11,8 @@ import Meta from "../common/Meta";
 import Pagination from "../common/Pagination";
 import AdSense from "../common/AdSense";
 
+const ITEMS_PER_PAGE = 15;
+
 const HomePage = ({ allHomes, favorites, onToggleFavorite }) => {
   const [activeFilters, setActiveFilters] = useState({
     city: "all",
@@ -136,10 +138,10 @@ const HomePage = ({ allHomes, favorites, onToggleFavorite }) => {
   }, [activeSearchTerm, activeFilters, allHomes, costError]);
 
   const totalFilteredHomes = filteredHomes.length;
-  const totalPages = Math.ceil(totalFilteredHomes / 15);
+  const totalPages = Math.ceil(totalFilteredHomes / ITEMS_PER_PAGE);
   const paginatedHomes = filteredHomes.slice(
-    (listPage - 1) * 15,
-    listPage * 15
+    (listPage - 1) * ITEMS_PER_PAGE,
+    listPage * ITEMS_PER_PAGE
   );
 
   const handlePageChange = (pageNumber) => {
@@ -374,7 +376,7 @@ const HomePage = ({ allHomes, favorites, onToggleFavorite }) => {
             )
           )}
         </div>
-        {filteredHomes.length === 0 && !costError && (
+        {paginatedHomes.length === 0 && !costError && (
           <div className="text-center py-20 bg-white rounded-lg shadow-md col-span-full">
             <h3 className="font-heading text-3xl font-semibold text-gray-800">
               No Homes Found
