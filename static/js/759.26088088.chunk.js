@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksenior_care_ontario=self.webpackChunksenior_care_ontario||[]).push([[759],{759:(e,a,c)=>{e.exports=c.p+"static/media/beyond-medical-care.371ceb5b0b3b0e71865c.md"}}]);

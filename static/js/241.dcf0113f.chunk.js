@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksenior_care_ontario=self.webpackChunksenior_care_ontario||[]).push([[241],{241:(e,s,o)=>{e.exports=o.p+"static/media/in-home-vs-long-term.d34e158d409d6eb57c60.md"}}]);

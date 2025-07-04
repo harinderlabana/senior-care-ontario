@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksenior_care_ontario=self.webpackChunksenior_care_ontario||[]).push([[823],{823:(e,s,i)=>{e.exports=i.p+"static/media/bill-of-rights.89182e59d5c0c7f3fb13.md"}}]);

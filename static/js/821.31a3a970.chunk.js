@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksenior_care_ontario=self.webpackChunksenior_care_ontario||[]).push([[821],{821:(e,s,t)=>{e.exports=t.p+"static/media/understanding-the-costs.be5b79b5c56526082c33.md"}}]);

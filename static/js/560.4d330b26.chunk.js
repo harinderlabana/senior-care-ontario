@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksenior_care_ontario=self.webpackChunksenior_care_ontario||[]).push([[560],{560:(e,a,r)=>{e.exports=r.p+"static/media/preparing-for-the-future.a0df8676a93bcac69219.md"}}]);
