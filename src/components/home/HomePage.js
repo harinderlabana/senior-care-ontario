@@ -392,6 +392,58 @@ const HomePage = ({ allHomes, favorites, onToggleFavorite }) => {
           onPageChange={handlePageChange}
         />
       </div>
+      {/* FIX: Added content section for AdSense approval */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+          <div className="text-center">
+            <h2 className="font-heading text-3xl md:text-4xl font-bold text-[#0c2d48]">
+              Why Choose SeniorCare Ontario?
+            </h2>
+            <p className="mt-4 text-lg max-w-3xl mx-auto text-gray-600">
+              Finding the right care for a loved one is one of the most
+              important decisions you'll make. SeniorCare Ontario is here to
+              provide clarity and confidence on that journey. Our comprehensive
+              directory features licensed retirement homes and long-term care
+              facilities across the province.
+            </p>
+          </div>
+          <div className="mt-12 grid md:grid-cols-3 gap-8 text-center">
+            <div className="p-6">
+              <BuildingIcon className="w-12 h-12 mx-auto text-[#145DA0]" />
+              <h3 className="font-heading text-xl font-bold mt-4">
+                Comprehensive Listings
+              </h3>
+              <p className="mt-2 text-gray-600">
+                Search hundreds of verified homes to find the perfect fit for
+                your family's needs.
+              </p>
+            </div>
+            <div className="p-6">
+              <CheckmarkIcon className="w-12 h-12 mx-auto text-[#145DA0]" />
+              <h3 className="font-heading text-xl font-bold mt-4">
+                Verified & Up-to-Date
+              </h3>
+              <p className="mt-2 text-gray-600">
+                Our data is regularly updated to ensure you have the most
+                accurate information available.
+              </p>
+            </div>
+            <div className="p-6">
+              <HeartIcon
+                className="w-12 h-12 mx-auto text-[#145DA0]"
+                filled={false}
+              />
+              <h3 className="font-heading text-xl font-bold mt-4">
+                Focused on Families
+              </h3>
+              <p className="mt-2 text-gray-600">
+                We provide the tools and resources to help you make this
+                important decision with confidence.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   );
 };
