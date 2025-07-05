@@ -4,12 +4,16 @@ import { useParams, Link } from "react-router-dom";
 import HomeCard from "../home/HomeCard";
 import Meta from "../common/Meta";
 import Pagination from "../common/Pagination";
+import { cityData } from "../../data/cityData"; // Import the new city data
 
 const ITEMS_PER_PAGE = 15;
 
 const CityPage = ({ allHomes, favorites, onToggleFavorite }) => {
   const { cityName } = useParams();
   const [listPage, setListPage] = useState(1);
+
+  // Get the unique data for the current city
+  const currentCityData = cityData[cityName.toLowerCase()];
 
   const cityHomes = useMemo(() => {
     return allHomes.filter(
@@ -46,15 +50,49 @@ const CityPage = ({ allHomes, favorites, onToggleFavorite }) => {
             &larr; Back to Main Directory
           </Link>
         </div>
-        <h1 className="font-heading text-4xl md:text-5xl font-bold text-[#0c2d48] mb-4">
-          Senior Care in {capitalizedCityName}
-        </h1>
-        <p className="text-lg text-gray-600 mb-8 max-w-3xl">
-          Finding the right care in {capitalizedCityName} is an important step.
-          Below is a complete list of all the retirement and long-term care
-          homes available in the area. Use this directory to compare options,
-          view photos, and find the perfect fit for your family.
-        </p>
+
+        {/* New Content Sections */}
+        {currentCityData && (
+          <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 mb-12">
+            <h1 className="font-heading text-4xl md:text-5xl font-bold text-[#0c2d48] mb-4">
+              Senior Living in {capitalizedCityName}
+            </h1>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              {currentCityData.about}
+            </p>
+
+            <div className="mt-8 grid md:grid-cols-2 gap-8">
+              <div>
+                <h2 className="font-heading text-2xl font-bold text-[#0c2d48] mb-3">
+                  Local Cost Analysis
+                </h2>
+                <p className="text-gray-700 mb-2">
+                  <strong>Retirement Homes:</strong> Approx. $
+                  {currentCityData.costs.retirement.min.toLocaleString()} - $
+                  {currentCityData.costs.retirement.max.toLocaleString()}/month
+                </p>
+                <p className="text-gray-700">
+                  <strong>Long-Term Care (Co-payment):</strong> Starts at
+                  approx. $
+                  {currentCityData.costs.longTermCare.basic.toLocaleString()}
+                  /month for a basic room.
+                </p>
+              </div>
+              <div>
+                <h2 className="font-heading text-2xl font-bold text-[#0c2d48] mb-3">
+                  Local Health Network
+                </h2>
+                <p className="text-gray-700">
+                  {currentCityData.healthNetwork.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <h2 className="font-heading text-3xl font-bold text-[#0c2d48] mb-8">
+          Listings for {capitalizedCityName}
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {paginatedHomes.map((home) => (
             <HomeCard
