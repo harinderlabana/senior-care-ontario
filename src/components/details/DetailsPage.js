@@ -6,6 +6,8 @@ import {
   CheckmarkIcon,
   DirectionsIcon,
   MapPinIcon,
+  PhoneIcon,
+  GlobeIcon, // Import the new icon
 } from "../common/Icons";
 import Meta from "../common/Meta";
 import JsonLdSchema from "../common/JsonLdSchema";
@@ -48,7 +50,6 @@ const DetailsPage = ({ allHomes }) => {
       />
       <JsonLdSchema home={home} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* FIX: Updated to simple link style */}
         <div className="mb-8">
           <Link
             to="/"
@@ -107,10 +108,30 @@ const DetailsPage = ({ allHomes }) => {
                 <h2 className="font-heading text-3xl font-bold text-[#0c2d48] mb-4">
                   About This Residence
                 </h2>
-                <p className="text-lg text-gray-600 flex items-center mb-4">
+                <p className="text-lg text-gray-600 flex items-center mb-2">
                   <MapPinIcon className="h-5 w-5 mr-2 text-gray-400" />
                   {fullAddress}
                 </p>
+                {home.phone && (
+                  <a
+                    href={`tel:${home.phone}`}
+                    className="text-lg text-gray-600 flex items-center mb-2 hover:text-[#145DA0] transition-colors"
+                  >
+                    <PhoneIcon className="h-5 w-5 mr-2 text-gray-400" />
+                    {home.phone}
+                  </a>
+                )}
+                {home.website && (
+                  <a
+                    href={home.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lg text-gray-600 flex items-center mb-4 hover:text-[#145DA0] transition-colors"
+                  >
+                    <GlobeIcon className="h-5 w-5 mr-2 text-gray-400" />
+                    Visit Website
+                  </a>
+                )}
                 <p className="text-lg text-gray-700 leading-relaxed">
                   {home.description}
                 </p>
@@ -234,7 +255,7 @@ const DetailsPage = ({ allHomes }) => {
                           fullAddress
                         )}&zoom=14&size=600x400&markers=color:0x0c2d48%7C${encodeURIComponent(
                           fullAddress
-                        )}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`}
+                        )}&key=${process.env.REACT_APP_Maps_API_KEY}`}
                         alt={`Map showing location of ${home.name}`}
                       />
                     </a>
